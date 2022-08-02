@@ -45,13 +45,11 @@ def check_bundle():
 def check_for_migration():
     """If migration files are found, delete them and return true"""
     half_bundle_pattern = '/tmp/nagiosbundle-*.tar'
-    half_bundles = glob.glob(half_bundle_pattern)
-    if half_bundles:
-        for cur_file in half_bundles:
-            subprocess.run(['rm', cur_file])
-        return True
-    else:
+    if not (half_bundles := glob.glob(half_bundle_pattern)):
         return False
+    for cur_file in half_bundles:
+        subprocess.run(['rm', cur_file])
+    return True
 
 
 def main(ip, username, password, xss_payload_path):
@@ -79,9 +77,9 @@ def main(ip, username, password, xss_payload_path):
 
     listening_locally = is_port_open('localhost', 22)
     if listening_locally:
-        print(f'[*] SSH Appears to be listening on this host.')
+        print('[*] SSH Appears to be listening on this host.')
     if not listening_locally:
-        print(f'[!] SSH does not appear to be listening locally.')
+        print('[!] SSH does not appear to be listening locally.')
         cleanup_gzip()
         exit(1)
 
@@ -103,11 +101,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     user = args.user
-    if args.password:
-        password = args.password
-    else:
-        password = getpass.getpass(f'Password for user "{user}": ')
-
+    password = args.password or getpass.getpass(f'Password for user "{user}": ')
     main(args.attack_server, user, password, args.payload_path)
 
     if args.dont_wait:

@@ -25,7 +25,7 @@ class FileArgs(FakeArgs):
 	def __init__(self, model, version, directory):
 		super(FileArgs, self).__init__(model, version)
 		self.file = True
-		self.ip = os.path.join(directory, "{}_{}".format(model, version))
+		self.ip = os.path.join(directory, f"{model}_{version}")
 
 class NetworkArgs(FakeArgs):
 	def __init__(self, model, version, port):
@@ -58,11 +58,14 @@ def listener_thread(port):
 			if data.endswith("\r\n\r\n"):
 				break
 
-		content_length = None
-		for line in data.split("\r\n"):
-			if line.startswith("Content-Length:"):
-				content_length = int(line.split(":")[1].strip())
-				break
+		content_length = next(
+			(
+				int(line.split(":")[1].strip())
+				for line in data.split("\r\n")
+				if line.startswith("Content-Length:")
+			),
+			None,
+		)
 
 		if content_length != None:
 			data = ""
@@ -106,14 +109,14 @@ if not args.file_only:
 if not os.path.exists(args.directory):
 	os.mkdir(args.directory)
 
-if args.model != None:
-	models = [args.model.upper()]
-else:
+if args.model is None:
 	models = address_info.keys()
 	models.sort()
 
+else:
+	models = [args.model.upper()]
 for model in models:
-	print("Testing {}".format(model))
+	print(f"Testing {model}")
 	for version in address_info[model].keys():
 		fa = FileArgs(model, version, args.directory)
 		fa.test()

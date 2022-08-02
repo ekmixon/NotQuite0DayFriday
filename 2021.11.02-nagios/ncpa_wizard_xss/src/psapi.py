@@ -59,9 +59,7 @@ def make_mountpoint_nodes(partition_name):
         try:
             st = os.statvfs(mountpoint)
             iu = st.f_files - st.f_ffree
-            iup = 0
-            if iu > 0:
-                iup = math.ceil(100 * float(iu) / float(st.f_files))
+            iup = math.ceil(100 * float(iu) / float(st.f_files)) if iu > 0 else 0
             inodes = RunnableNode('inodes', method=lambda: (st.f_files, 'inodes'))
             inodes_used = RunnableNode('inodes_used', method=lambda: (iu, 'inodes'))
             inodes_free = RunnableNode('inodes_free', method=lambda: (st.f_ffree, 'inodes'))
@@ -304,7 +302,7 @@ def get_root_node(config):
     if environment.SYSTEM == "Windows":
         for importable in importables:
             try:
-                relative_name = 'listener.' + importable
+                relative_name = f'listener.{importable}'
                 tmp = __import__(relative_name, fromlist=['get_node'])
                 get_node = getattr(tmp, 'get_node')
 

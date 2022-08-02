@@ -20,7 +20,7 @@ def main(args):
     print(f'[*] {bytes_sent}/{len(command_str)} bytes sent')
 
     sock.settimeout(10)
-    print(f'[*] Waiting for response...')
+    print('[*] Waiting for response...')
     try:
         response = sock.recv(100)
         if response.startswith(b'OK-C'):

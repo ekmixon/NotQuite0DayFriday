@@ -68,14 +68,14 @@ def find_gadget(symbol_name, filename = None):
 
 			disasm = GetDisasm(inst_address)
 			for required_inst in required:
-				if any([x in disasm for x in required_inst]):
+				if any(x in disasm for x in required_inst):
 					found_insts[inst_address] = required_inst
-					if stack_size == None and disasm.startswith(stack_write_inst):
+					if stack_size is None and disasm.startswith(stack_write_inst):
 						stack_size = GetOperandValue(inst_address, 2)
 					break
 
 			if inst_address not in found_insts:
-				if any([disasm.startswith(x) for x in disallowed_starts]):
+				if any(disasm.startswith(x) for x in disallowed_starts):
 					break
 
 				if GetOpnd(inst_address, 0) in bad_register_writes:

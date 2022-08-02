@@ -36,11 +36,7 @@ if args.A:
   ports = range(1, 65535)
 
 host = ""
-if (args.nagios.endswith("/")):
-    host = args.nagios
-else:
-    host = args.nagios + "/"
-
+host = args.nagios if (args.nagios.endswith("/")) else f"{args.nagios}/"
 print(f"Scanning {args.target}")
 print("IP:Request Time")
 for port in ports:

@@ -14,20 +14,18 @@ import uuid
 ################################################################################
 
 def read_file(filename):
-  fd = open(filename, "r")
-  content = fd.read()
-  fd.close()
+  with open(filename, "r") as fd:
+    content = fd.read()
   return content
 
 def write_file(filename, content):
-  fd = open(filename, "w")
-  fd.write(content)
-  fd.close()
+  with open(filename, "w") as fd:
+    fd.write(content)
 
 def find_item(content, start_tag, end_tag, allow_fail = False):
   start = content.find(start_tag)
   if start < 0:
-    print("Could not find {} item".format(start_tag))
+    print(f"Could not find {start_tag} item")
     if allow_fail:
       return None, None
     sys.exit(1)
@@ -47,7 +45,7 @@ parser.add_argument("-n", "--num-windows", default=10, type=int,
 args = parser.parse_args()
 
 temp = tempfile.TemporaryDirectory()
-if os.system("unzip {} -d {}/ > /dev/null".format(args.input, temp.name)) != 0:
+if os.system(f"unzip {args.input} -d {temp.name}/ > /dev/null") != 0:
   print("unzip failed")
   sys.exit(1)
 
@@ -56,14 +54,14 @@ workbook_file = os.path.join(temp.name, "xl/workbook.xml")
 content = read_file(workbook_file)
 workbookview, after_workbookview = find_item(content, "<workbookView", "/>")
 workbookview_uuid, after_uuid = find_item(workbookview, 'uid="', '"', True)
-if workbookview_uuid != None:
-  new_workbood_id = 'uid="{{{}}}"'
-else:
+if workbookview_uuid is None:
   workbookview_uuid, after_uuid = find_item(workbookview, "uid='", "'")
   new_workbood_id = "uid='{{{}}}'"
 
+else:
+  new_workbood_id = 'uid="{{{}}}"'
 # Duplicate the workbookView
-for n in range(args.num_windows):
+for _ in range(args.num_windows):
   new_uuid = new_workbood_id.format(uuid.uuid4().urn[9:].upper())
   new_view = workbookview.replace(workbookview_uuid, new_uuid)
   content = content[:after_workbookview]+new_view+content[after_workbookview:]
@@ -77,12 +75,12 @@ content = read_file(sheet_file)
 sheetview, after_sheetview = find_item(content, "<sheetView ", "/>")
 sheetview_id, after_sheetview_id = find_item(sheetview, 'workbookViewId="', '"',
                                              True)
-if sheetview_id != None:
-  new_workbood_id = 'workbookViewId="{}"'
-else:
+if sheetview_id is None:
   sheetview_id, after_sheetview_id = find_item(sheetview,"workbookViewId='","'")
   new_workbood_id = "workbookViewId='{}'"
 
+else:
+  new_workbood_id = 'workbookViewId="{}"'
 # Duplicate the sheetView
 for n in range(args.num_windows):
   new_view = sheetview.replace(sheetview_id, new_workbood_id.format(n+1))
@@ -92,7 +90,8 @@ for n in range(args.num_windows):
 write_file(sheet_file, content)
 
 # zip the edited xlsx file
-if os.system("cd {}; zip {} -r . > /dev/null".format(temp.name, os.path.abspath(args.output))):
+if os.system(
+    f"cd {temp.name}; zip {os.path.abspath(args.output)} -r . > /dev/null"):
   print("zip failed")
   sys.exit(1)
 

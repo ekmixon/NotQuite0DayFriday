@@ -4,7 +4,7 @@ import requests
 import sys
 
 
-if not len(sys.argv) == 3:
+if len(sys.argv) != 3:
     print(f'USAGE: {sys.argv[0]} TARGET_IP NRDP_TOKEN')
     exit(2)
 

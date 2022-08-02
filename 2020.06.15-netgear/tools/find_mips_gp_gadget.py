@@ -39,7 +39,7 @@ def find_gadget(fd):
 		for inst_address in range(start, end, 4):
 			disasm = GetDisasm(inst_address)
 			for required_inst in gadget_reqs:
-				if all([x in disasm for x in required_inst]):
+				if all(x in disasm for x in required_inst):
 					found_insts[str(required_inst)] = inst_address
 
 			if len(gadget_reqs) == len(found_insts):

